@@ -13,13 +13,7 @@ public class TestComponent extends JPanel {
     public TestComponent(){
         setOpaque(true);
         /*
-        try {
-            System.out.println("Enter image name\n");
-            File input = new File(imageName);
-            image = ImageIO.read(input);
-        } catch (IOException ie) {
-            System.out.println("Error:"+ie.getMessage());
-        }
+
     }
     */
     }
@@ -47,7 +41,7 @@ public class TestComponent extends JPanel {
         g2d.fillOval(x, y, shapeSize, shapeSize);
         g2d.setColor(Color.yellow);
 
-        System.out.println("paint!");
+
 
         //BufferedImage image=
     }

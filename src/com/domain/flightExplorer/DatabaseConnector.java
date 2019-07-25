@@ -26,6 +26,7 @@ public class DatabaseConnector {
 
         //Имя пользователя БД
         String name = "root";
+        //
         //Пароль
         String password = "root";
 

@@ -1,5 +1,6 @@
 package com.domain.flightExplorer;
 
+import com.domain.flightExplorer.gui.BackgroundComponent;
 import com.domain.flightExplorer.gui.TestComponent;
 
 import javax.swing.*;
@@ -25,7 +26,7 @@ public class FlightExplorer {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(20, 20, 5, 5),
+        panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0),
                 BorderFactory.createLineBorder(Color.black)));
 
         frame.setContentPane(panel);
@@ -33,19 +34,36 @@ public class FlightExplorer {
 
        // panel.setLayout(null);
 
-        panel.add(new TestComponent(), BorderLayout.CENTER);
+        panel.add(new BackgroundComponent(), BorderLayout.CENTER);
 
+        /*
         // Creating JLabel
-        userLabel = new JLabel("");
+        userLabel = new JLabel("Тут какой то текст");
 
         userLabel.setBounds(10,20,80,25);
+        userLabel.setBackground(Color.yellow);
         panel.add(userLabel,BorderLayout.NORTH);
+        panel.add(userLabel);
+        */
+
+        /*
+        String fileName = "images/background.png";
+        ImageIcon icon = new ImageIcon(fileName);
+        JLabel label = new JLabel(icon);
 
 
+        panel.add(label);
+        */
+
+        JPanel panelSouth=new JPanel();
 
         // Creating login button
         JButton loginButton = new JButton("Connect");
-        panel.add(loginButton,BorderLayout.SOUTH);
+        panelSouth.add(loginButton);
+        JButton btn2=new JButton("button2");
+        panelSouth.add(btn2);
+
+        panel.add(panelSouth,BorderLayout.SOUTH);
 
         loginButton.addActionListener(new ActionListener() {
             @Override
@@ -57,20 +75,7 @@ public class FlightExplorer {
             }
         });
 
-        /*
-        new Thread(new Runnable() {
-            public void run() {
-                while(true) { //бесконечно крутим
-                    try {
-                        Thread.sleep(100); //
-                        System.out.println("Hi!");
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-        */
+
     }
 
     public static void main(String[] args) {
