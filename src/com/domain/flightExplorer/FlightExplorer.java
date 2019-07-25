@@ -1,9 +1,10 @@
 package com.domain.flightExplorer;
 
-import com.domain.flightExplorer.gui.BackgroundComponent;
-import com.domain.flightExplorer.gui.TestComponent;
+import com.domain.flightExplorer.gui.ImageComponent;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,7 +13,18 @@ import java.awt.event.ActionListener;
 public class FlightExplorer {
 
     DatabaseConnector databaseConnector;
+    ImageComponent backgroundImage;
+    ImageComponent arrowShortImage;
+    ImageComponent arrrowLongImage;
+
+    final int MIN_RATE=10;
+    final int INIT_RATE=100;
+    final int MAX_RATE=300;
+
+    float longAngle=0;
+    float shortAngle=0;
     JLabel userLabel;
+
     public FlightExplorer(){
         initComponents();
         databaseConnector=new DatabaseConnector();
@@ -25,55 +37,84 @@ public class FlightExplorer {
         frame.setSize(600 , 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0),
-                BorderFactory.createLineBorder(Color.black)));
-
-        frame.setContentPane(panel);
         frame.setVisible(true);
 
-       // panel.setLayout(null);
+        JPanel borderPanel = new JPanel(new BorderLayout());
+        frame.setContentPane(borderPanel);
 
-        panel.add(new BackgroundComponent(), BorderLayout.CENTER);
-
-        /*
-        // Creating JLabel
-        userLabel = new JLabel("Тут какой то текст");
-
-        userLabel.setBounds(10,20,80,25);
-        userLabel.setBackground(Color.yellow);
-        panel.add(userLabel,BorderLayout.NORTH);
-        panel.add(userLabel);
-        */
-
-        /*
-        String fileName = "images/background.png";
-        ImageIcon icon = new ImageIcon(fileName);
-        JLabel label = new JLabel(icon);
-
-
-        panel.add(label);
-        */
-
+        //Верхняя панель пользовательского интерфейса
         JPanel panelSouth=new JPanel();
 
+        //Слайдер для задания скорости чтения
+        JSlider timeSlider=new JSlider(JSlider.HORIZONTAL,MIN_RATE,MAX_RATE,INIT_RATE);
+        panelSouth.add(timeSlider);
         // Creating login button
-        JButton loginButton = new JButton("Connect");
+        JButton loginButton = new JButton("Start");
         panelSouth.add(loginButton);
-        JButton btn2=new JButton("button2");
+
+        JButton btn2=new JButton("Pause");
         panelSouth.add(btn2);
 
-        panel.add(panelSouth,BorderLayout.SOUTH);
+        borderPanel.add(panelSouth,BorderLayout.NORTH);
+
+        timeSlider.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                System.out.println(timeSlider.getValue());
+            }
+        });
 
         loginButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if(databaseConnector.connect(""))
-                    userLabel.setText("Connected");
-                else
-                    userLabel.setText("NotConnected");
+                //if(databaseConnector.connect(""))
+                // userLabel.setText("Connected");
+                // else
+                // userLabel.setText("NotConnected");
+
+                longAngle=0;
             }
         });
+
+        //Панель с картинками
+        JPanel imagePanel=new JPanel();
+        imagePanel.setLayout(new OverlayLayout(imagePanel));
+
+        backgroundImage=new ImageComponent("images/VD10.png");
+        arrowShortImage =new ImageComponent("images/arrowShort.png");
+        arrrowLongImage=new ImageComponent("images/arrowLong.png");
+        imagePanel.add(arrrowLongImage);
+        imagePanel.add(arrowShortImage);
+        imagePanel.add(backgroundImage);
+
+        borderPanel.add(imagePanel,BorderLayout.CENTER);
+
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                try{
+                    while(true) {
+                        longAngle++;
+
+                        shortAngle = longAngle / 10;
+
+                        arrrowLongImage.setAngle(longAngle);
+                        arrowShortImage.setAngle(shortAngle);
+                        // backgroundImage.revalidate();
+                        frame.repaint();
+
+                        Thread.sleep(50);
+                    }
+                }
+                catch (Exception e){
+
+                }
+
+            }
+        }).start();
+
 
 
     }
