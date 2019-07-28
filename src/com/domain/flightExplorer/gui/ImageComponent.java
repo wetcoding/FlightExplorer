@@ -8,8 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
-/***
- * Компонент для отрисовки картинки с сохранением пропорций
+/** Компонент для отрисовки картинки с сохранением пропорций
  * в масштабе контейнера
  */
 public class ImageComponent extends JPanel {
@@ -17,8 +16,7 @@ public class ImageComponent extends JPanel {
     private BufferedImage image;
     private double angle;
 
-    /***
-     *
+    /**
      * @param imgPath путь к файлу картинки
      */
     public ImageComponent(String imgPath){
@@ -31,8 +29,6 @@ public class ImageComponent extends JPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-
-
         if (image==null)
             return;
 
@@ -73,8 +69,7 @@ public class ImageComponent extends JPanel {
     }
 
 
-    /***
-     *
+    /** Установка угла
      * @param angle угол повора картинки в градусах (относительно центра)
      */
     public void setAngle(float angle){

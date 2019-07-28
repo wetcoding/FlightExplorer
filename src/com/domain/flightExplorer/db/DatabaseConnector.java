@@ -1,4 +1,4 @@
-package com.domain.flightExplorer;
+package com.domain.flightExplorer.db;
 
 import java.sql.*;
 
