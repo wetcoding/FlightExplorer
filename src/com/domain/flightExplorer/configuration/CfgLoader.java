@@ -64,7 +64,7 @@ public class CfgLoader {
      * @param key ключ
      * @return значение
      */
-    public String load(String key){
+    public String load(String key) throws NoSuchFieldException{
         if(cfgMap.containsKey(key))
             return cfgMap.get(key);
         return null;
