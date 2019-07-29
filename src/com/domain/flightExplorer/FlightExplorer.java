@@ -1,5 +1,7 @@
 package com.domain.flightExplorer;
 
+import com.domain.flightExplorer.configuration.CfgLoader;
+import com.domain.flightExplorer.db.DatabaseConnector;
 import com.domain.flightExplorer.gui.ImageComponent;
 
 import javax.swing.*;
@@ -8,6 +10,7 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 
 public class FlightExplorer {
@@ -25,15 +28,18 @@ public class FlightExplorer {
     float shortAngle=0;
     JLabel userLabel;
 
+    JFrame frame;
+
     public FlightExplorer(){
         initComponents();
-        databaseConnector=new DatabaseConnector();
+        loadConfigurations();
+        //databaseConnector=new DatabaseConnector();
 
     }
 
     private void initComponents() {
 
-        JFrame frame = new JFrame("FlightExplorer");
+         frame = new JFrame("FlightExplorer");
         frame.setSize(600 , 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -117,6 +123,37 @@ public class FlightExplorer {
 
 
 
+    }
+
+    private void loadConfigurations(){
+        try{
+            CfgLoader cfgLoader=new CfgLoader("settings.ini");
+            System.out.println(cfgLoader.load("dbName"));
+
+
+            System.out.println(cfgLoader.load("ip"));
+            System.out.println(cfgLoader.load("port"));
+            System.out.println(cfgLoader.load("table"));
+            System.out.println(cfgLoader.load("user"));
+            System.out.println(cfgLoader.load("password"));
+
+
+        }
+        catch (IOException e)
+        {
+            showDialogAndExit("Could not load ini file");
+        }
+
+
+    }
+
+    private void showDialogAndExit(String message){
+        JOptionPane.showMessageDialog(frame,
+                message,
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+
+        System.exit(0);
     }
 
     public static void main(String[] args) {
