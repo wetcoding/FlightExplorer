@@ -17,21 +17,9 @@ import java.util.TimerTask;
 
 public class FlightExplorer {
 
-    DatabaseConnector databaseConnector;
     ImageComponent backgroundImage;
     ImageComponent arrowShortImage;
     ImageComponent arrrowLongImage;
-
-    //Параметры JSlider
-    final int MIN_RATE=0;
-    final int INIT_RATE=1;
-    final int MAX_RATE=3;
-
-    int rate=1000;
-    int setRate=1000;
-
-    float longAngle=0;
-    float shortAngle=0;
 
     JLabel HLabel;
     JLabel frameLabel;
@@ -41,9 +29,85 @@ public class FlightExplorer {
     JButton startButton;
     JButton pauseButton;
 
+    //Параметры JSlider
+    final int MIN_RATE=0;
+    final int INIT_RATE=1;
+    final int MAX_RATE=3;
+
+    //Переменная для текущей скорости запросов и уставки
+    int rate=1000;
+    int setRate=1000;
+
+    float longAngle=0;
+    float shortAngle=0;
+
+    DatabaseConnector databaseConnector;
+    boolean pause=false;
+    boolean play=false;
+
+    int testFrame=0;
+    float testH=0;
+
+    float prevH=0;
+    final float kAver=0.95f;
+
+
     public FlightExplorer(){
         initComponents();
         loadConfigurations();
+
+        startButton.setEnabled(true);
+
+        //Запускем анимационный поток
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                try{
+                    while(true) {
+
+                        //Усреднение значения
+                        float h=kAver*prevH+(1-kAver)*testH;
+                        longAngle=h%1000*0.36f;
+                        shortAngle=h/1000*36;
+                        prevH=h;
+
+                        arrrowLongImage.setAngle(longAngle);
+                        arrowShortImage.setAngle(shortAngle);
+                        frame.repaint();
+
+                        Thread.sleep(50);
+                    }
+                }
+                catch (Exception e){
+
+                }
+
+            }
+        }).start();
+
+        //Создём и запускаем таймер для чтения данных из БД
+        Timer timer=new Timer();
+        timer.schedule(new DBRequestTask(),0,250);
+    }
+
+    /**
+     *  Задача таймера чтения из БД
+     */
+    public class DBRequestTask extends TimerTask{
+        @Override
+        public void run() {
+            rate-=250;
+            if(rate<=0){
+                if(play && !pause){
+                    testFrame++;
+                    testH=testFrame*testFrame;
+                    frameLabel.setText("frame: "+String.valueOf(testFrame));
+                    HLabel.setText("H: "+String.valueOf(testH));
+                }
+                rate=setRate;
+            }
+        }
     }
 
     private void initComponents() {
@@ -89,7 +153,6 @@ public class FlightExplorer {
         panel2.add(HLabel);
         panel3.add(frameLabel);
 
-
         topRootPanel.add(panel1);
         topRootPanel.add(panel2);
         topRootPanel.add(panel3);
@@ -112,12 +175,36 @@ public class FlightExplorer {
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //if(databaseConnector.connect(""))
-                // userLabel.setText("Connected");
-                // else
-                // userLabel.setText("NotConnected");
+                if(!play){
+                    play=true;
+                    startButton.setText("Stop");
+                    pauseButton.setEnabled(true);
 
-                longAngle=0;
+                    testFrame=0;
+                }
+                else
+                {
+                    play=false;
+                    startButton.setText("Start");
+
+                    pause=false;
+                    pauseButton.setText("Pause");
+                    pauseButton.setEnabled(false);
+                }
+            }
+        });
+
+        pauseButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(!pause){
+                    pause=true;
+                    pauseButton.setText("Continue");
+                }
+                else{
+                    pause=false;
+                    pauseButton.setText("Pause");
+                }
             }
         });
 
@@ -133,51 +220,12 @@ public class FlightExplorer {
         imagePanel.add(backgroundImage);
 
         borderPanel.add(imagePanel,BorderLayout.CENTER);
-
-
-        //Запускем анимационный поток
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-                try{
-                    while(true) {
-                        longAngle++;
-
-                        shortAngle = longAngle / 10;
-
-                        arrrowLongImage.setAngle(longAngle);
-                        arrowShortImage.setAngle(shortAngle);
-                        // backgroundImage.revalidate();
-                        frame.repaint();
-
-                        Thread.sleep(50);
-                    }
-                }
-                catch (Exception e){
-
-                }
-
-            }
-        }).start();
-
-        //Создём и запускаем таймер для чтения данных из БД
-        Timer timer=new Timer();
-        timer.schedule(new DBRequestTask(),0,250);
-
-    }
-
-    public class DBRequestTask extends TimerTask{
-        @Override
-        public void run() {
-            rate-=250;
-            if(rate<=0)
-                rate=setRate;
-         }
     }
 
 
-    /** Загружает конфигурацию из файла и создаёт объект databaseConnector*/
+    /**
+     * Загружает конфигурацию из файла и создаёт объект databaseConnector
+     */
     private void loadConfigurations(){
         try{
             CfgLoader cfgLoader=new CfgLoader("settings.ini");
