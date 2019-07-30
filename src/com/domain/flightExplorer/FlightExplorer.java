@@ -1,6 +1,7 @@
 package com.domain.flightExplorer;
 
 import com.domain.flightExplorer.configuration.CfgLoader;
+import com.domain.flightExplorer.db.DataPoint;
 import com.domain.flightExplorer.db.DatabaseConnector;
 import com.domain.flightExplorer.gui.ImageComponent;
 
@@ -44,19 +45,17 @@ public class FlightExplorer {
     DatabaseConnector databaseConnector;
     boolean pause=false;
     boolean play=false;
+    boolean connected=false;
 
-    int testFrame=0;
-    float testH=0;
 
     float prevH=0;
     final float kAver=0.95f;
+    DataPoint currentPoint;
 
 
     public FlightExplorer(){
         initComponents();
         loadConfigurations();
-
-        startButton.setEnabled(true);
 
         //Запускем анимационный поток
         new Thread(new Runnable() {
@@ -65,16 +64,17 @@ public class FlightExplorer {
 
                 try{
                     while(true) {
+                        if(currentPoint!=null) {
+                            //Усреднение значения
+                            float h = kAver * prevH + (1 - kAver) * currentPoint.getH();
+                            longAngle = h % 1000 * 0.36f;
+                            shortAngle = h / 1000 * 36;
+                            prevH = h;
 
-                        //Усреднение значения
-                        float h=kAver*prevH+(1-kAver)*testH;
-                        longAngle=h%1000*0.36f;
-                        shortAngle=h/1000*36;
-                        prevH=h;
-
-                        arrrowLongImage.setAngle(longAngle);
-                        arrowShortImage.setAngle(shortAngle);
-                        frame.repaint();
+                            arrrowLongImage.setAngle(longAngle);
+                            arrowShortImage.setAngle(shortAngle);
+                            frame.repaint();
+                        }
 
                         Thread.sleep(50);
                     }
@@ -99,17 +99,43 @@ public class FlightExplorer {
         public void run() {
             rate-=250;
             if(rate<=0){
-                if(play && !pause){
-                    testFrame++;
-                    testH=testFrame*testFrame;
-                    frameLabel.setText("frame: "+String.valueOf(testFrame));
-                    HLabel.setText("H: "+String.valueOf(testH));
+                if(!connected && databaseConnector.isCommandExecuted())
+                {
+                    if(databaseConnector.isConnected()) {
+                        startButton.setEnabled(true);
+                        connected=true;
+                    }
+                    else
+                        showDialogAndExit(databaseConnector.getStatusMessage());
+                }
+
+                if(play && !pause && connected){
+
+                    //Если команда на чтение выполнена
+                    if(databaseConnector.isCommandExecuted())
+                    {
+                        String s=databaseConnector.getStatusMessage();
+                        if(s!=null)
+                        {
+                            showDialogAndExit(s);
+                        }
+                        currentPoint=databaseConnector.getNextPoint();
+                        databaseConnector.requestNextPoint();
+
+                        if(currentPoint!=null){
+                            frameLabel.setText("frame: "+String.valueOf(currentPoint.getFrameNum()));
+                            HLabel.setText("H: "+String.valueOf(currentPoint.getH()));
+                        }
+                    }
                 }
                 rate=setRate;
             }
         }
     }
 
+    /**
+     * Метод инициализирует окно программы и добавляет обработчики на UI элементы
+     */
     private void initComponents() {
 
         frame = new JFrame("FlightExplorer");
@@ -179,13 +205,13 @@ public class FlightExplorer {
                     play=true;
                     startButton.setText("Stop");
                     pauseButton.setEnabled(true);
-
-                    testFrame=0;
+                    databaseConnector.requestNextPoint();
                 }
                 else
                 {
                     play=false;
                     startButton.setText("Start");
+                    databaseConnector.reset();
 
                     pause=false;
                     pauseButton.setText("Pause");
@@ -224,7 +250,7 @@ public class FlightExplorer {
 
 
     /**
-     * Загружает конфигурацию из файла и создаёт объект databaseConnector
+     * Метод загружает конфигурацию из файла и создаёт объект databaseConnector
      */
     private void loadConfigurations(){
         try{
@@ -259,6 +285,10 @@ public class FlightExplorer {
         }
     }
 
+    /**
+     * Метод вызывает диалоговое окно с сообщением и закрывает программу
+     * @param message-сообщения для диалогового окна
+     */
     private void showDialogAndExit(String message){
         JOptionPane.showMessageDialog(frame,
                 message,
@@ -268,6 +298,10 @@ public class FlightExplorer {
         System.exit(0);
     }
 
+    /**
+     * Точка входа в программу
+     * @param args
+     */
     public static void main(String[] args) {
         // Creating instance of JFrame
         SwingUtilities.invokeLater(new Runnable() {

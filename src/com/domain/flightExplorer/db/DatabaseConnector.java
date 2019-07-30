@@ -4,33 +4,54 @@ import java.sql.*;
 import java.util.LinkedList;
 import java.util.Queue;
 
-/** Класс для последовательного считывания записей из БД*/
+/**
+ * Класс для последовательного считывания записей из БД c организацией очереди
+ * @author wetcoding
+ * @version 1.1
+ */
 public class DatabaseConnector {
 
+    /** Текущая позиция чтения из БД */
     int currentPos=0;
 
-    private boolean emptyResult=false;//
+    /** Флаг о конце таблицы (пустоп ответе) */
+    private boolean emptyResult=false;
 
-    private String statusMessage=null;//Последнее сообщение об ошибке (null-если нет)
-    private boolean okFlag=false;//Флаг об исполнении классом последней комманды
+    /** Последнее сообщение об ошибке (null-если нет) */
+    private String statusMessage=null;
+
+    /** Флаг об исполнении объектом последней комманды */
+    private boolean commandExecuted =false;
+
+
     private String tableName;
-
 
     private Statement statement=null;
     private Connection connection=null;
-    private Queue<DataPoint> pointsQueue;//Очередь из данных
-    final int BD_QUERY_PORTION=50;//Количество запрашиваемых записей в запросе
-    final int MIN_QUEUE_SIZE=10;//Минимальный размер очереди, после которой произойдёт запрос
 
-    /** Конструктор класса*/
+    /** Очередь из DataPoint */
+    private Queue<DataPoint> pointsQueue;
+
+    /** Количество запрашиваемых записей в запросе */
+    final int BD_QUERY_PORTION=50;
+
+    /** Минимальный размер очереди, после которой произойдёт запрос */
+    final int MIN_QUEUE_SIZE=10;
+
+    /**
+     * Конструктор класса
+     */
     public DatabaseConnector(){
 
         pointsQueue=new LinkedList<>();
     }
 
-    /** Сброс позиции чтения и флага конца таблицы*/
+    /**
+     * Сброс результатов чтения и текущей позиции
+     */
     public void reset(){
         currentPos=0;
+        pointsQueue.clear();
         emptyResult=false;
     }
 
@@ -38,8 +59,17 @@ public class DatabaseConnector {
         return this.connection!=null;
     }
 
+    /**
+     * Возвращает последнее сообщение и обнуляет его
+     * @return s-последнее собщение
+     */
     public String getStatusMessage(){
-        return this.statusMessage;
+        String s=null;
+        if(statusMessage!=null) {
+            s = new String(this.statusMessage);
+            this.statusMessage = null;
+        }
+        return s;
     }
 
     /**
@@ -53,7 +83,7 @@ public class DatabaseConnector {
      */
     public void connect(String ip,String port,String dbName,String tableName,String user,String password){
 
-        okFlag=false;
+        commandExecuted =false;
         reset();
         this.tableName=tableName;
         String url = "jdbc:mysql://"+ip+":"+port+"/"+dbName+
@@ -76,22 +106,26 @@ public class DatabaseConnector {
                 }
                 catch (Exception e)
                 {
-                    System.out.println(e.toString());
+                    System.out.println(e.getMessage());
                     statusMessage=e.getMessage();
                 }
-                okFlag=true;
+                commandExecuted =true;
             }
         }).start();
 
     }
 
 
+    public boolean isCommandExecuted() {
+        return commandExecuted;
+    }
+
     /**
      *  Запрос на чтение следующей записи
      */
     public void requestNextPoint(){
 
-        okFlag=false;
+        commandExecuted =false;
 
         //Если нет соединения или долши до конца таблицы
         if(connection==null || emptyResult)
@@ -99,7 +133,7 @@ public class DatabaseConnector {
 
         //Если в очереди есть минимально необходимое колличество записей то просто выходим
         if(pointsQueue.size()>MIN_QUEUE_SIZE)
-            okFlag=true;
+            commandExecuted =true;
         else {
 
             new Thread(new Runnable() {
@@ -108,8 +142,8 @@ public class DatabaseConnector {
 
                     try {
                         //Запрос на чтение очередных BD_QUERY_PORTION записей из таблицы
-                        System.out.println("Query request from " + currentPos + " to " + currentPos + BD_QUERY_PORTION);
-                        String sql = "SELECT * FROM _5b7a8db0b2da1_ap_1 WHERE frameNum>=" + String.valueOf(currentPos) + "AND frameNum<" + String.valueOf(currentPos + BD_QUERY_PORTION);
+                        System.out.println("Query request from " + currentPos + " to " + (currentPos + BD_QUERY_PORTION));
+                        String sql = "SELECT * FROM "+tableName+" WHERE frameNum>=" + String.valueOf(currentPos) + " AND frameNum<" + String.valueOf(currentPos + BD_QUERY_PORTION)+";";
                         ResultSet rs = statement.executeQuery(sql);
 
                         emptyResult=true;
@@ -123,17 +157,24 @@ public class DatabaseConnector {
                             emptyResult=false;
                         }
                     } catch (Exception e) {
+                        System.out.println(e.getMessage());
                         statusMessage = e.getMessage();
+                        emptyResult=true;
                     }
-                    if(!emptyResult) {
-                        okFlag = true;
+
+                    commandExecuted = true;
+                    if(!emptyResult)
                         currentPos += BD_QUERY_PORTION;
-                    }
+
                 }
             }).start();
         }
     }
 
+    /**
+     * Метод для получение первой записи из очереди
+     * @return возвращает DataPoint
+     */
     public DataPoint getNextPoint(){
         return pointsQueue.poll();
     }
